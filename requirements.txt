@@ -1,0 +1,14 @@
+python-telegram-bot==20.0a4
+telethon==1.36.0
+requests==2.31.0
+fuzzywuzzy==0.18.0
+python-Levenshtein==0.25.1
+beautifulsoup4==4.12.3
+aiohttp==3.9.5
+tornado==6.4
+bs4==0.0.2
+cachetools==5.5.0
+APScheduler==3.10.4
+pytz==2024.1
+requests-html==0.10.0
+six==1.16.0
