@@ -177,15 +177,46 @@ async def search_movie(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await quicksearch(update, context)
 
 def start_dummy_server():
-    PORT = int(os.environ.get("PORT", 8000))
+    PORT = int(os.environ.get("PORT", 8080))  # Use Render's PORT or fallback to 8080
     Handler = http.server.SimpleHTTPRequestHandler
-    with socketserver.TCPServer(("", PORT), Handler) as httpd:
-        logger.info(f"Dummy server running on port {PORT}")
-        httpd.serve_forever()
+    for attempt in range(3):  # Retry 3 times
+        try:
+            with socketserver.TCPServer(("", PORT), Handler) as httpd:
+                logger.info(f"Dummy server running on port {PORT}")
+                httpd.serve_forever()
+            break
+        except OSError as e:
+            if e.errno == 98:  # Address already in use
+                logger.warning(f"Port {PORT} in use, retrying in 5 seconds...")
+                time.sleep(5)
+            else:
+                raise
+    else:
+        logger.error("Failed to start dummy server after retries")
 
 async def main():
-    await client.start(phone=PHONE)
-    logger.info("Client connected successfully")
+    # Check for OTP file
+    otp_file = 'otp.txt'
+    code = None
+    if os.path.exists(otp_file):
+        with open(otp_file, 'r') as f:
+            code = f.read().strip()
+        logger.info("Read OTP from otp.txt")
+    else:
+        logger.warning("No otp.txt found, requesting new OTP")
+
+    # Start Telethon client
+    try:
+        if code:
+            await client.start(phone=PHONE, code_callback=lambda: code)
+        else:
+            await client.start(phone=PHONE)
+        logger.info("Client connected successfully")
+    except Exception as e:
+        logger.error(f"Failed to connect client: {str(e)}")
+        raise
+
+    # Run bot
     app = Application.builder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("quicksearch", quicksearch))
